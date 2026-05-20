@@ -2,9 +2,7 @@ package se.iths.armin.webshopauthserver.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record LoginRequestDto(
-        @NotBlank(message = "E-postadress krävs")
-        String email,
+public record ChangePasswordDto(
         @NotBlank(message = "Lösenord krävs")
         String password
 ) {
