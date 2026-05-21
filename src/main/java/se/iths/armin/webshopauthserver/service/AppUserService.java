@@ -44,13 +44,6 @@ public class AppUserService {
         return appUserMapper.toDto(appUser);
     }
 
-    public AppUserResponseDto findByEmail(String email) {
-        AppUser appUser = appUserRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        return appUserMapper.toDto(appUser);
-    }
-
     public AppUserResponseDto register(AppUserRequestDto appUserRequestDto) {
         AppUser appUser = appUserMapper.toEntity(appUserRequestDto);
 
