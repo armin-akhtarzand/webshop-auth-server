@@ -56,7 +56,7 @@ public class AppUserService {
         return appUserMapper.toDto(appUser);
     }
 
-    public void changeEmail(ChangeEmailDto changeEmailDto, Long id) {
+    public AppUserResponseDto changeEmail(ChangeEmailDto changeEmailDto, Long id) {
 
         AppUser existingUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -72,10 +72,13 @@ public class AppUserService {
 
         existingUser.setEmail(changeEmailDto.email());
 
-        appUserRepository.save(existingUser);
+
+        AppUser saved = appUserRepository.save(existingUser);
+
+        return appUserMapper.toDto(saved);
     }
 
-    public void changePassword(ChangePasswordDto changePasswordDto, Long id) {
+    public AppUserResponseDto changePassword(ChangePasswordDto changePasswordDto, Long id) {
         AppUser existingUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -86,7 +89,10 @@ public class AppUserService {
         }
 
         existingUser.setPassword(passwordEncoder.encode(changePasswordDto.password()));
-        appUserRepository.save(existingUser);
+        AppUser saved = appUserRepository.save(existingUser);
+        return appUserMapper.toDto(saved);
+
+
     }
 
     //Kollar behörighet (admin eller själv) vid t.ex byte av email, lösenord eller ta bort användare
