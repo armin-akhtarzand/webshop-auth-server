@@ -10,6 +10,7 @@ import se.iths.armin.webshopauthserver.dto.AppUserRequestDto;
 import se.iths.armin.webshopauthserver.dto.AppUserResponseDto;
 import se.iths.armin.webshopauthserver.dto.ChangeEmailDto;
 import se.iths.armin.webshopauthserver.dto.ChangePasswordDto;
+import se.iths.armin.webshopauthserver.exception.BadRequestException;
 import se.iths.armin.webshopauthserver.exception.DuplicateFoundException;
 import se.iths.armin.webshopauthserver.exception.UnauthorizedException;
 import se.iths.armin.webshopauthserver.exception.UserNotFoundException;
@@ -59,7 +60,7 @@ public class AppUserService {
     }
 
     @Transactional
-    public AppUserResponseDto changeEmail(ChangeEmailDto changeEmailDto, Long id) {
+    public void changeEmail(ChangeEmailDto changeEmailDto, Long id) {
 
         AppUser existingUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -67,7 +68,7 @@ public class AppUserService {
         validateSelfOrAdmin(existingUser.getUserId());
 
         if (existingUser.getEmail().equals(changeEmailDto.email())) {
-            throw new DuplicateFoundException("Invalid email change");
+            throw new BadRequestException("Invalid email change");
         }
         if (appUserRepository.findByEmail(changeEmailDto.email()).isPresent()) {
             throw new DuplicateFoundException("Email already used");
@@ -78,24 +79,21 @@ public class AppUserService {
 
         AppUser saved = appUserRepository.save(existingUser);
 
-        return appUserMapper.toDto(saved);
     }
 
     @Transactional
-    public AppUserResponseDto changePassword(ChangePasswordDto changePasswordDto, Long id) {
+    public void changePassword(ChangePasswordDto changePasswordDto, Long id) {
         AppUser existingUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         validateSelfOrAdmin(existingUser.getUserId());
 
         if (passwordEncoder.matches(changePasswordDto.password(), existingUser.getPassword())) {
-            throw new DuplicateFoundException("Invalid password change");
+            throw new BadRequestException("Invalid password change");
         }
 
         existingUser.setPassword(passwordEncoder.encode(changePasswordDto.password()));
         AppUser saved = appUserRepository.save(existingUser);
-        return appUserMapper.toDto(saved);
-
 
     }
 
