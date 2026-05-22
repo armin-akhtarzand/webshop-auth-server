@@ -5,6 +5,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import se.iths.armin.webshopauthserver.dto.AppUserRequestDto;
 import se.iths.armin.webshopauthserver.dto.AppUserResponseDto;
 import se.iths.armin.webshopauthserver.dto.ChangeEmailDto;
@@ -44,6 +45,7 @@ public class AppUserService {
         return appUserMapper.toDto(appUser);
     }
 
+    @Transactional
     public AppUserResponseDto register(AppUserRequestDto appUserRequestDto) {
         AppUser appUser = appUserMapper.toEntity(appUserRequestDto);
 
@@ -56,6 +58,7 @@ public class AppUserService {
         return appUserMapper.toDto(appUser);
     }
 
+    @Transactional
     public AppUserResponseDto changeEmail(ChangeEmailDto changeEmailDto, Long id) {
 
         AppUser existingUser = appUserRepository.findById(id)
@@ -78,6 +81,7 @@ public class AppUserService {
         return appUserMapper.toDto(saved);
     }
 
+    @Transactional
     public AppUserResponseDto changePassword(ChangePasswordDto changePasswordDto, Long id) {
         AppUser existingUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -119,6 +123,7 @@ public class AppUserService {
         }
     }
 
+    @Transactional
     public void delete(Long id) {
         AppUser existingUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
