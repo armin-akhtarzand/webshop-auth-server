@@ -24,7 +24,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(loginRequestDto));
     }
 
-    @GetMapping
+    @GetMapping("/jwks")
     public ResponseEntity<Map<String, Object>> publicJwks() {
         return ResponseEntity.ok(authService.publicJwkSet());
     }
