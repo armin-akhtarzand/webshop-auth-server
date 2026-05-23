@@ -28,10 +28,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
     }
 
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<?> handleUnauthorized(UnauthorizedException ex) {
+    @ExceptionHandler(ForbiddenRequestException.class)
+    public ResponseEntity<?> handleForbiddenRequestException(ForbiddenRequestException ex) {
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
     }
 
     @ExceptionHandler(UserNotFoundException.class)

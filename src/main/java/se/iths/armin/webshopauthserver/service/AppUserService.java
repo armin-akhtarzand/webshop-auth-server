@@ -12,7 +12,7 @@ import se.iths.armin.webshopauthserver.dto.ChangeEmailDto;
 import se.iths.armin.webshopauthserver.dto.ChangePasswordDto;
 import se.iths.armin.webshopauthserver.exception.BadRequestException;
 import se.iths.armin.webshopauthserver.exception.DuplicateFoundException;
-import se.iths.armin.webshopauthserver.exception.UnauthorizedException;
+import se.iths.armin.webshopauthserver.exception.ForbiddenRequestException;
 import se.iths.armin.webshopauthserver.exception.UserNotFoundException;
 import se.iths.armin.webshopauthserver.mapper.AppUserMapper;
 import se.iths.armin.webshopauthserver.model.AppUser;
@@ -102,6 +102,7 @@ public class AppUserService {
         //Hämtar auktoriserad användaren via SecurityContext
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+
         //Hämtar användares "username" -> email
         String email = authentication.getName();
 
@@ -117,7 +118,7 @@ public class AppUserService {
 
         //IFALL de varken är "sig själv" eller ADMIN så har de inte behörighet att utföra handling
         if (!isSelf && !isAdmin) {
-            throw new UnauthorizedException("You are not allowed to perform this action");
+            throw new ForbiddenRequestException("You are not allowed to perform this action");
         }
     }
 
