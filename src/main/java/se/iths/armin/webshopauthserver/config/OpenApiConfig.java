@@ -16,8 +16,8 @@ public class OpenApiConfig {
         String schemeName = "bearerAuth";
         return new OpenAPI()
                 .info(new Info()
-                        .title("Person Service API")
-                        .description("Simple JWT protected person microservice")
+                        .title("Webshop Auth Server API")
+                        .description("Authentication and authorization service for the webshop microservice architecture. Handles JWT authentication, user management and role-based access control.")
                         .version("1.0"))
                 .addSecurityItem(new SecurityRequirement().addList(schemeName))
                 .components(new Components()

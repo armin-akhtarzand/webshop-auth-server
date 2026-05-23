@@ -5,12 +5,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import se.iths.armin.webshopauthserver.dto.AppUserRequestDto;
 import se.iths.armin.webshopauthserver.dto.AppUserResponseDto;
 import se.iths.armin.webshopauthserver.dto.ChangeEmailDto;
 import se.iths.armin.webshopauthserver.dto.ChangePasswordDto;
+import se.iths.armin.webshopauthserver.exception.BadRequestException;
 import se.iths.armin.webshopauthserver.exception.DuplicateFoundException;
-import se.iths.armin.webshopauthserver.exception.UnauthorizedException;
+import se.iths.armin.webshopauthserver.exception.ForbiddenRequestException;
 import se.iths.armin.webshopauthserver.exception.UserNotFoundException;
 import se.iths.armin.webshopauthserver.mapper.AppUserMapper;
 import se.iths.armin.webshopauthserver.model.AppUser;
@@ -44,6 +46,7 @@ public class AppUserService {
         return appUserMapper.toDto(appUser);
     }
 
+    @Transactional
     public AppUserResponseDto register(AppUserRequestDto appUserRequestDto) {
         AppUser appUser = appUserMapper.toEntity(appUserRequestDto);
 
@@ -56,7 +59,8 @@ public class AppUserService {
         return appUserMapper.toDto(appUser);
     }
 
-    public AppUserResponseDto changeEmail(ChangeEmailDto changeEmailDto, Long id) {
+    @Transactional
+    public void changeEmail(ChangeEmailDto changeEmailDto, Long id) {
 
         AppUser existingUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -64,7 +68,7 @@ public class AppUserService {
         validateSelfOrAdmin(existingUser.getUserId());
 
         if (existingUser.getEmail().equals(changeEmailDto.email())) {
-            throw new DuplicateFoundException("Invalid email change");
+            throw new BadRequestException("Invalid email change");
         }
         if (appUserRepository.findByEmail(changeEmailDto.email()).isPresent()) {
             throw new DuplicateFoundException("Email already used");
@@ -75,23 +79,21 @@ public class AppUserService {
 
         AppUser saved = appUserRepository.save(existingUser);
 
-        return appUserMapper.toDto(saved);
     }
 
-    public AppUserResponseDto changePassword(ChangePasswordDto changePasswordDto, Long id) {
+    @Transactional
+    public void changePassword(ChangePasswordDto changePasswordDto, Long id) {
         AppUser existingUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         validateSelfOrAdmin(existingUser.getUserId());
 
         if (passwordEncoder.matches(changePasswordDto.password(), existingUser.getPassword())) {
-            throw new DuplicateFoundException("Invalid password change");
+            throw new BadRequestException("Invalid password change");
         }
 
         existingUser.setPassword(passwordEncoder.encode(changePasswordDto.password()));
         AppUser saved = appUserRepository.save(existingUser);
-        return appUserMapper.toDto(saved);
-
 
     }
 
@@ -99,6 +101,7 @@ public class AppUserService {
     public void validateSelfOrAdmin(Long id) {
         //Hämtar auktoriserad användaren via SecurityContext
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
 
         //Hämtar användares "username" -> email
         String email = authentication.getName();
@@ -115,10 +118,11 @@ public class AppUserService {
 
         //IFALL de varken är "sig själv" eller ADMIN så har de inte behörighet att utföra handling
         if (!isSelf && !isAdmin) {
-            throw new UnauthorizedException("You are not allowed to perform this action");
+            throw new ForbiddenRequestException("You are not allowed to perform this action");
         }
     }
 
+    @Transactional
     public void delete(Long id) {
         AppUser existingUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
