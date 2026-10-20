@@ -8,16 +8,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
-import org.springframework.security.oauth2.jwt.JwsHeader;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 import se.iths.armin.webshopauthserver.dto.LoginRequestDto;
 import se.iths.armin.webshopauthserver.dto.TokenResponseDto;
 
 import java.security.KeyPair;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -92,5 +90,18 @@ public class AuthService {
                 .build();
 
         return new JWKSet(rsaKey).toJSONObject();
+    }
+
+    public long remainingSeconds(Jwt jwt) {
+        Instant expiresAt = jwt.getExpiresAt();
+
+        if (expiresAt == null) {
+            return 0;
+        }
+        return Math.max(
+                0,
+                Duration.between(Instant.now(),
+                        expiresAt).getSeconds()
+        );
     }
 }
