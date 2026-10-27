@@ -40,6 +40,9 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
+/**
+ * Ställer in inloggning, JWT och behörigheter för auth-service.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -61,6 +64,14 @@ public class SecurityConfig {
         this.jwtKeyId = jwtKeyId;
     }
 
+    /**
+     * Läser in den privata och den publika RSA-nyckeln från konfigurationen.
+     * Den privata används för att signera token och den publika för att verifiera den.
+     *
+     * @return nyckelparet som används för JWT
+     * @throws IllegalArgumentException om en nyckel saknas eller inte är giltig Base64
+     * @throws Exception om nycklarna inte kan läsas in
+     */
     @Bean
     public KeyPair keyPair() throws Exception {
         if (StringUtils.hasText(jwtPrivateKey) && StringUtils.hasText(jwtPublicKey)) {
@@ -74,6 +85,13 @@ public class SecurityConfig {
         throw new IllegalArgumentException("JWT Public Key or JWT Private Key Not Found");
     }
 
+    /**
+     * Samlar nyckelparet och dess ID så att JWT-signeringen kan använda dem.
+     * Detta används internt och innehåller även den privata nyckeln.
+     *
+     * @param keyPair den privata och den publika RSA-nyckeln
+     * @return nyckelkällan som används för signering
+     */
     @Bean
     public JWKSource<SecurityContext> jwkSource(KeyPair keyPair) {
         RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
@@ -84,11 +102,24 @@ public class SecurityConfig {
         return new ImmutableJWKSet<>(new JWKSet(rsaKey));
     }
 
+    /**
+     * Skapar verktyget som signerar JWT-token.
+     *
+     * @param jwkSource nyckelkällan som innehåller den privata nyckeln
+     * @return verktyget som skapar signerade token
+     */
     @Bean
     public JwtEncoder jwtEncoder(JWKSource<SecurityContext> jwkSource) {
         return new NimbusJwtEncoder(jwkSource);
     }
 
+    /**
+     * Skapar verktyget som kontrollerar inkommande JWT-token.
+     * Kontrollerar signaturen, giltighetstiden och vem som utfärdat token.
+     *
+     * @param keyPair nyckelparet vars publika nyckel används för kontrollen
+     * @return verktyget som läser och verifierar token
+     */
     @Bean
     public JwtDecoder jwtDecoder(KeyPair keyPair) {
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder
@@ -98,16 +129,34 @@ public class SecurityConfig {
         return jwtDecoder;
     }
 
+    /**
+     * Hämtar verktyget som verifierar användarens inloggningsuppgifter.
+     *
+     * @param authenticationConfiguration Spring Securitys inställningar för inloggning
+     * @return verktyget som används vid inloggning
+     * @throws Exception om verktyget inte kan skapas
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    /**
+     * Använder BCrypt för att hasha lösenord och kontrollera dem vid inloggning.
+     *
+     * @return verktyget för hashning och lösenordskontroll
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Gör om rollerna i token till behörigheter som Spring Security förstår.
+     * Om token saknar roller blir listan med behörigheter tom.
+     *
+     * @return verktyget som omvandlar rollerna
+     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
@@ -124,6 +173,17 @@ public class SecurityConfig {
     }
 
 
+    /**
+     * Bestämmer vilka anrop som är öppna och vilka som kräver inloggning eller roller.
+     * Anrop till auth-service använder JWT via Authorization-headern, inte via cookie.
+     * Ingen inloggningssession sparas på servern.
+     * Om användaren får ändra ett visst konto kontrolleras separat i servicelagret.
+     *
+     * @param http inställningar för HTTP-säkerhet
+     * @param jwtAuthenticationConverter verktyget som omvandlar tokenens roller
+     * @return säkerhetsreglerna som används för inkommande anrop
+     * @throws Exception om säkerhetsreglerna inte kan skapas
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -148,6 +208,12 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Bestämmer vilka lokala frontend-adresser som får anropa auth-service
+     * från webbläsaren och vilka HTTP-metoder och headers som tillåts.
+     *
+     * @return CORS-inställningarna för tjänstens endpoints
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
