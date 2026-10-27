@@ -22,6 +22,9 @@ import se.iths.armin.webshopauthserver.repository.AppUserRepository;
 import java.util.List;
 
 
+/**
+ * Service för affärslogik när det gäller CRUD metoder
+ */
 @Service
 @RequiredArgsConstructor
 public class AppUserService {
@@ -31,6 +34,11 @@ public class AppUserService {
     private final PasswordEncoder passwordEncoder;
 
 
+    /**
+     * Hämtar och lägger till alla användare i en lista
+     *
+     * @return mappar om listan till en DTO lista och returnerar
+     */
     public List<AppUserResponseDto> findAll() {
         List<AppUser> appUsers = appUserRepository.findAll();
 
@@ -38,6 +46,14 @@ public class AppUserService {
 
     }
 
+    /**
+     * Hämtar användaren med ID
+     * returnerar informationen som DTo
+     *
+     * @param id tar emot relevant användares ID
+     * @return mappar användaren information till response dto och returnerar
+     * @throws UserNotFoundException ifall användaren inte finns
+     */
     public AppUserResponseDto findById(Long id) {
         AppUser appUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -46,6 +62,16 @@ public class AppUserService {
         return appUserMapper.toDto(appUser);
     }
 
+    /**
+     * Mappar request(registering uppgifterna) till en entitet.
+     * Kontrollerar att mejladressen inte redan används,
+     * hashar lösenordet,
+     * och sparar den nya användaren i databasen
+     *
+     * @param appUserRequestDto vi tar emot de inloggningsuppgifter användaren vill registrera
+     * @return vi returnerar den nya användarens information i form av DTO
+     * @throws DuplicateFoundException om mejladressen redan används
+     */
     @Transactional
     public AppUserResponseDto register(AppUserRequestDto appUserRequestDto) {
         AppUser appUser = appUserMapper.toEntity(appUserRequestDto);
@@ -59,6 +85,18 @@ public class AppUserService {
         return appUserMapper.toDto(appUser);
     }
 
+    /**
+     * Verifierar att användaren finns,
+     * validerar användaren (antingen admin eller den som ska byta mejl på sig själv).
+     * ser så att den nya mejlen inte är desamma som de befintliga.
+     * sparar ändringen.
+     *
+     * @param changeEmailDto tar emot användarens nya mejl
+     * @param id             den användare ändringen ska ske på.
+     * @throws BadRequestException     ifall nya mejlen är desamma som det befintliga.
+     * @throws DuplicateFoundException ifall mejlen redan används
+     * @throws UserNotFoundException   ifall användaren inte hittas i databasen
+     */
     @Transactional
     public void changeEmail(ChangeEmailDto changeEmailDto, Long id) {
 
@@ -81,6 +119,18 @@ public class AppUserService {
 
     }
 
+    /**
+     * Verifierar att användaren finns,
+     * validerar användaren (antingen admin eller den som ska byta lösenord på sig själv).
+     * ser så att de nya lösenordet inte är desamma som de befintliga.
+     * hashar lösenordet,
+     * sparar ändringen.
+     *
+     * @param changePasswordDto tar emot användarens nya lösenord
+     * @param id                den användare ändringen ska ske på.
+     * @throws BadRequestException   ifall nya lösenordet är desamma som det befintliga.
+     * @throws UserNotFoundException ifall användaren inte hittas i databasen
+     */
     @Transactional
     public void changePassword(ChangePasswordDto changePasswordDto, Long id) {
         AppUser existingUser = appUserRepository.findById(id)
@@ -97,31 +147,43 @@ public class AppUserService {
 
     }
 
-    //Kollar behörighet (admin eller själv) vid t.ex byte av email, lösenord eller ta bort användare
+    /**
+     * Kontrollerar så att användaren är admin
+     * eller har samma ID som den hämtade användaren (inloggad)
+     *
+     * @param id ID för den användare som det gäller
+     * @throws UserNotFoundException     om den inloggade användaren saknas i databasen
+     * @throws ForbiddenRequestException om användaren varken är admin eller har det relevanta ID:t
+     */
     public void validateSelfOrAdmin(Long id) {
-        //Hämtar auktoriserad användaren via SecurityContext
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 
-        //Hämtar användares "username" -> email
         String email = authentication.getName();
 
-        //Hämtar användaren från databasen
+
         AppUser currentUser = appUserRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        //Kollar ifall användaren antingen är sig själv
-        // (alltså den som är inloggad och ska göra ändring på sig själv)
-        //Eller ifall användaren är Admin
+
         boolean isSelf = currentUser.getUserId().equals(id);
         boolean isAdmin = currentUser.getRole().equals(UserRole.ROLE_ADMIN);
 
-        //IFALL de varken är "sig själv" eller ADMIN så har de inte behörighet att utföra handling
+
         if (!isSelf && !isAdmin) {
             throw new ForbiddenRequestException("You are not allowed to perform this action");
         }
     }
 
+    /**
+     * Verfierar att användaren finns
+     * validerar behörighet (antingen admin eller användaren själv)
+     * raderar användaren
+     *
+     * @param id ID:t för användaren som ska raderas
+     * @throws UserNotFoundException ifall användaren som ska raderas inte hittas i databasen.
+     */
     @Transactional
     public void delete(Long id) {
         AppUser existingUser = appUserRepository.findById(id)

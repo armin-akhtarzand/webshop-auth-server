@@ -21,6 +21,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service som hanterar bl.a inloggning samt skapa & signera token
+ */
 @Service
 public class AuthService {
     private final AuthenticationManager authenticationManager;
@@ -46,6 +49,14 @@ public class AuthService {
         this.jwtKeyId = jwtKeyId;
     }
 
+    /**
+     * Verifierar användarens inloggningsuppgifter.
+     * Bygger en JWT med användarens mejladress, roller och giltighetstid
+     * Signerar JWT.
+     *
+     * @param loginRequestDto användarens mejladress och lösenord
+     * @return signerad token, giltighetstid i sekunder, användarens mejladress och roller
+     */
     public TokenResponseDto login(LoginRequestDto loginRequestDto) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -84,6 +95,12 @@ public class AuthService {
 
     }
 
+
+    /**
+     * Vi publicerar Publika nyckeln som JWKS så att andra tjänster kan verifiera vår JWT-token
+     *
+     * @return JWKS med publika nyckeln
+     */
     public Map<String, Object> publicJwkSet() {
         RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
                 .keyID(jwtKeyId)
@@ -92,6 +109,12 @@ public class AuthService {
         return new JWKSet(rsaKey).toJSONObject();
     }
 
+    /**
+     * Räknar återstående giltighetstid för token
+     *
+     * @param jwt tar emot token
+     * @return återstående giltighetstid i sekunder, annars 0 ifall det saknas (kan aldrig vara negativt)
+     */
     public long remainingSeconds(Jwt jwt) {
         Instant expiresAt = jwt.getExpiresAt();
 

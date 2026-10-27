@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
+    //Config för Swagger UI
     @Bean
     public OpenAPI openAPI() {
         String schemeName = "bearerAuth";
